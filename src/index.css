@@ -1,0 +1,141 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+@config "../tailwind.config.js";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-500: #2563eb;
+  --color-brand-600: #1d4ed8;
+  --color-brand-700: #1e40af;
+  --color-brand-950: #172554;
+  --shadow-soft: 0 18px 50px -24px rgba(15, 23, 42, 0.35);
+  --font-sans: "Inter", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  color: #0f172a;
+  background: #f8fafc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.surface {
+  border: 1px solid #e2e8f0;
+  border-radius: 1.5rem;
+  background: #ffffff;
+  box-shadow: 0 18px 50px -24px rgba(15, 23, 42, 0.35);
+}
+
+.app-shell {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.muted-surface {
+  background: #f8fafc;
+}
+
+.text-primary {
+  color: #0f172a;
+}
+
+.text-muted {
+  color: #64748b;
+}
+
+.dark body {
+  background: #020617;
+  color: #e2e8f0;
+}
+
+.dark .surface {
+  border-color: #1e293b;
+  background: #0f172a;
+  box-shadow: 0 18px 50px -24px rgba(0, 0, 0, 0.8);
+}
+
+.dark .app-shell {
+  background: #020617;
+  color: #e2e8f0;
+}
+
+.dark .muted-surface {
+  background: #111827;
+}
+
+.dark .text-primary {
+  color: #f8fafc;
+}
+
+.dark .text-muted {
+  color: #94a3b8;
+}
+
+.dark .bg-white,
+.dark .bg-white\/90,
+.dark .bg-white\/95 {
+  background-color: rgb(15 23 42 / var(--tw-bg-opacity, 1));
+}
+
+.dark .bg-slate-50,
+.dark .bg-slate-100 {
+  background-color: #111827;
+}
+
+.dark .border-slate-200,
+.dark .border-slate-200\/80 {
+  border-color: #334155;
+}
+
+.dark .text-slate-950,
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #f8fafc;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600 {
+  color: #cbd5e1;
+}
+
+.dark .text-slate-500,
+.dark .text-slate-400 {
+  color: #94a3b8;
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+  color: #f8fafc;
+  background-color: transparent;
+}
