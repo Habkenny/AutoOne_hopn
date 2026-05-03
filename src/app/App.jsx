@@ -31,12 +31,26 @@ export default function App() {
           <Route path="services" element={<Services />} />
           <Route path="services/rentals" element={<Rentals />} />
           <Route path="services/rentals/:rentalId" element={<RentalDetail />} />
-          <Route path="services/rentals/:rentalId/book" element={<RentalBooking />} />
+          <Route
+            path="services/rentals/:rentalId/book"
+            element={
+              <ProtectedRoute>
+                <RentalBooking />
+              </ProtectedRoute>
+            }
+          />
           <Route path="services/imports" element={<Imports />} />
           <Route path="services/financing" element={<Financing />} />
           <Route path="services/:serviceType" element={<Listing />} />
           <Route path="services/:serviceType/:serviceId" element={<ServiceDetail />} />
-          <Route path="book/:serviceType/:serviceId?" element={<Booking />} />
+          <Route
+            path="book/:serviceType/:serviceId?"
+            element={
+              <ProtectedRoute>
+                <Booking />
+              </ProtectedRoute>
+            }
+          />
           <Route path="bookings" element={<Bookings />} />
           <Route path="profile" element={<Profile />} />
           <Route path="login" element={<Login />} />

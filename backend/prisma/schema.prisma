@@ -1,0 +1,307 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CUSTOMER
+  PARTNER
+  ADMIN
+}
+
+enum PartnerStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum RequestStatus {
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+model User {
+  id                   String                @id @default(cuid())
+  name                 String
+  email                String                @unique
+  phone                String?
+  passwordHash         String
+  role                 UserRole              @default(CUSTOMER)
+  language             String                @default("en")
+  currency             String                @default("USD")
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  bookings             Booking[]             @relation("CustomerBookings")
+  bookingEvents        BookingEvent[]        @relation("BookingEventActor")
+  favorites            Favorite[]
+  financeApplications  FinanceApplication[]
+  importRequests       ImportRequest[]
+  notifications         Notification[]
+  partner              Partner?
+  rentalBookings       RentalBooking[]
+  reviews              Review[]
+}
+
+model Partner {
+  id                 String              @id @default(cuid())
+  userId             String              @unique
+  businessName       String
+  status             PartnerStatus       @default(PENDING)
+  address            String?
+  verificationStatus String              @default("unverified")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  providers          Provider[]
+  rentalCars         RentalCar[]
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ServiceType {
+  id             String     @id
+  labelKey       String
+  descriptionKey String
+  enabled        Boolean    @default(true)
+  beta           Boolean    @default(false)
+  accent         String
+  providers      Provider[]
+}
+
+model Provider {
+  id              String            @id
+  partnerId       String?
+  typeId          String
+  name            String
+  location        String
+  description     String
+  hero            String
+  rating          Decimal           @default(0)
+  reviewCount     Int               @default(0)
+  distanceKm      Decimal           @default(0)
+  priceFrom       Decimal           @default(0)
+  availableToday  Boolean           @default(false)
+  active          Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  availability    AvailabilitySlot[]
+  bookings        Booking[]
+  favorites       Favorite[]
+  partner         Partner?          @relation(fields: [partnerId], references: [id])
+  reviews         Review[]
+  services        ProviderService[]
+  type            ServiceType       @relation(fields: [typeId], references: [id])
+}
+
+model ProviderService {
+  id              String    @id @default(cuid())
+  providerId      String
+  name            String
+  price           Decimal
+  durationMinutes Int       @default(60)
+  active          Boolean   @default(true)
+  bookings        Booking[]
+  provider        Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+}
+
+model AvailabilitySlot {
+  id          String     @id @default(cuid())
+  providerId  String?
+  rentalCarId String?
+  date        DateTime?
+  startTime   String
+  endTime     String?
+  capacity    Int        @default(1)
+  status      String     @default("open")
+  provider    Provider?  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  rentalCar   RentalCar? @relation(fields: [rentalCarId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id                String           @id @default(cuid())
+  customerId        String
+  providerId        String
+  providerServiceId String?
+  serviceType       String
+  date              DateTime
+  time              String
+  customerName      String
+  customerPhone     String
+  vehicleLabel      String
+  notes             String?
+  price             Decimal          @default(0)
+  status            BookingStatus    @default(PENDING)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  customer          User             @relation("CustomerBookings", fields: [customerId], references: [id])
+  events            BookingEvent[]
+  provider          Provider         @relation(fields: [providerId], references: [id])
+  providerService   ProviderService? @relation(fields: [providerServiceId], references: [id])
+  review            Review?
+}
+
+model BookingEvent {
+  id         String         @id @default(cuid())
+  bookingId  String
+  actorId    String?
+  fromStatus BookingStatus?
+  toStatus   BookingStatus
+  note       String?
+  createdAt  DateTime       @default(now())
+  actor      User?          @relation("BookingEventActor", fields: [actorId], references: [id])
+  booking    Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Favorite {
+  userId     String
+  providerId String
+  createdAt  DateTime @default(now())
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, providerId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RentalCar {
+  id               String             @id
+  partnerId        String?
+  model            String
+  type             String
+  location         String
+  pricePerDay      Decimal
+  rating           Decimal            @default(0)
+  available        Boolean            @default(true)
+  seats            Int
+  transmission     String
+  fuel             String
+  deposit          Decimal
+  images           String[]
+  availability     AvailabilitySlot[]
+  bookings         RentalBooking[]
+  partner          Partner?           @relation(fields: [partnerId], references: [id])
+}
+
+model RentalBooking {
+  id          String        @id @default(cuid())
+  customerId  String
+  rentalCarId String
+  startDate   DateTime
+  endDate     DateTime
+  extras      String[]
+  total        Decimal
+  status      BookingStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  customer    User          @relation(fields: [customerId], references: [id])
+  rentalCar   RentalCar     @relation(fields: [rentalCarId], references: [id])
+}
+
+model ImportRegion {
+  id          String      @id
+  label       String
+  shipping    Decimal
+  customsRate Decimal
+  eta         String
+  cars        ImportCar[]
+}
+
+model ImportCar {
+  id       String          @id
+  regionId String
+  model    String
+  price    Decimal
+  image    String
+  specs    String[]
+  region   ImportRegion   @relation(fields: [regionId], references: [id])
+  requests ImportRequest[]
+}
+
+model ImportRequest {
+  id          String                @id @default(cuid())
+  customerId  String
+  regionId    String
+  carId       String
+  destination String
+  costs       Json
+  status      RequestStatus         @default(SUBMITTED)
+  createdAt   DateTime              @default(now())
+  car         ImportCar             @relation(fields: [carId], references: [id])
+  customer    User                  @relation(fields: [customerId], references: [id])
+  events      ImportTrackingEvent[]
+}
+
+model ImportTrackingEvent {
+  id              String        @id @default(cuid())
+  importRequestId String
+  label           String
+  completedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  importRequest   ImportRequest @relation(fields: [importRequestId], references: [id], onDelete: Cascade)
+}
+
+model FinanceOffer {
+  id                    String               @id
+  name                  String
+  interestRate          Decimal
+  approvalSpeed         String
+  minDownPaymentPercent Int
+  features              String[]
+  applications          FinanceApplication[]
+}
+
+model FinanceApplication {
+  id             String                    @id @default(cuid())
+  customerId     String
+  financeOfferId String
+  form           Json
+  finance        Json
+  calculator     Json
+  status         RequestStatus             @default(SUBMITTED)
+  createdAt      DateTime                  @default(now())
+  customer       User                      @relation(fields: [customerId], references: [id])
+  events         FinanceApplicationEvent[]
+  financeOffer   FinanceOffer              @relation(fields: [financeOfferId], references: [id])
+}
+
+model FinanceApplicationEvent {
+  id                   String             @id @default(cuid())
+  financeApplicationId String
+  status               RequestStatus
+  note                 String?
+  createdAt            DateTime           @default(now())
+  financeApplication   FinanceApplication @relation(fields: [financeApplicationId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  userId     String
+  providerId String
+  bookingId  String?  @unique
+  rating     Decimal
+  text       String
+  createdAt  DateTime @default(now())
+  booking    Booking? @relation(fields: [bookingId], references: [id])
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

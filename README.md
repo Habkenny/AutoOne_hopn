@@ -110,13 +110,28 @@ src/
 
 ```bash
 npm install
+npm install --prefix backend
+copy .env.example .env
+copy backend\.env.example backend\.env
+docker compose --file backend\docker-compose.yml up -d
+npm --prefix backend run prisma:deploy
+npm --prefix backend run prisma:seed
+npm run dev:backend
+```
+
+In a second terminal:
+
+```bash
 npm run dev
 ```
+
+The frontend runs on `http://localhost:5173` and expects the backend on `http://localhost:4000`.
 
 ## Build
 
 ```bash
 npm run build
+npm run build:backend
 ```
 
 ## Implemented Scope

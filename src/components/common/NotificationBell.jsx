@@ -1,13 +1,29 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { useState } from "react";
+import { getNotifications, markAllNotificationsRead, markNotificationRead } from "../../services/mockApi.js";
 import { useAppState } from "../../store/AppStateContext.jsx";
 import Badge from "../ui/Badge.jsx";
 import Button from "../Button.jsx";
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const { state, actions } = useAppState();
-  const unreadCount = state.notifications.filter((notification) => !notification.read).length;
+  const { state } = useAppState();
+  const queryClient = useQueryClient();
+  const { data: notifications = state.notifications } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: getNotifications,
+    enabled: state.auth.isAuthenticated,
+  });
+  const readMutation = useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+  const readAllMutation = useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
 
   return (
     <div className="relative">
@@ -29,16 +45,16 @@ export default function NotificationBell() {
         <div className="surface absolute end-0 top-13 z-40 w-[min(22rem,calc(100vw-2rem))] overflow-hidden">
           <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
             <h2 className="font-bold text-slate-950">Notifications</h2>
-            <Button type="button" variant="ghost" className="min-h-9 px-3 py-1 text-xs" onClick={actions.markAllNotificationsRead}>
+            <Button type="button" variant="ghost" className="min-h-9 px-3 py-1 text-xs" onClick={() => readAllMutation.mutate()}>
               Mark read
             </Button>
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {state.notifications.map((notification) => (
+            {notifications.map((notification) => (
               <button
                 key={notification.id}
                 type="button"
-                onClick={() => actions.markNotificationRead(notification.id)}
+                onClick={() => readMutation.mutate(notification.id)}
                 className="w-full border-b border-slate-100 p-4 text-start transition hover:bg-slate-50"
               >
                 <div className="mb-2 flex items-center justify-between gap-2">

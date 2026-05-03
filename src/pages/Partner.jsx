@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, DollarSign, ListChecks, Plus, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,7 @@ import Badge from "../components/ui/Badge.jsx";
 import Input from "../components/ui/Input.jsx";
 import { SkeletonGrid } from "../components/Skeleton.jsx";
 import { useCurrency } from "../hooks/useCurrency.js";
-import { getPartnerDashboard } from "../services/mockApi.js";
+import { addPartnerService, getPartnerDashboard, updateBookingStatus } from "../services/mockApi.js";
 import { useAppState } from "../store/AppStateContext.jsx";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -15,6 +15,7 @@ const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export default function Partner() {
   const { t } = useTranslation();
   const { actions } = useAppState();
+  const queryClient = useQueryClient();
   const { formatMoney } = useCurrency();
   const [bookingStatuses, setBookingStatuses] = useState({});
   const [services, setServices] = useState([]);
@@ -22,6 +23,14 @@ export default function Partner() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["partner-dashboard"],
     queryFn: getPartnerDashboard,
+  });
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => updateBookingStatus(id, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["partner-dashboard"] }),
+  });
+  const addServiceMutation = useMutation({
+    mutationFn: addPartnerService,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["partner-dashboard"] }),
   });
 
   if (isLoading) {
@@ -45,18 +54,17 @@ export default function Partner() {
 
   function updateStatus(id, status) {
     setBookingStatuses((current) => ({ ...current, [id]: status }));
-    actions.addToast({ title: `Booking ${status}`, message: "UI-only partner action saved locally." });
+    statusMutation.mutate({ id, status });
+    actions.addToast({ title: `Booking ${status}`, message: "Partner action saved." });
   }
 
   function addService(event) {
     event.preventDefault();
     if (!newService.name || !newService.price) return;
-    setServices((current) => [
-      { id: `svc-${Date.now()}`, ...newService, active: true },
-      ...serviceRows,
-    ]);
+    addServiceMutation.mutate({ ...newService, price: Number(newService.price) });
+    setServices((current) => [{ id: `svc-${Date.now()}`, ...newService, active: true }, ...serviceRows]);
     setNewService({ name: "", price: "", duration: "" });
-    actions.addToast({ title: "Service added", message: "Service management is UI-only in this MVP." });
+    actions.addToast({ title: "Service added", message: "Service management was saved." });
   }
 
   return (

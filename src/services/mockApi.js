@@ -1,19 +1,4 @@
-import { financeData } from "../features/financing/financeData.js";
-import { importRegions, importsData } from "../features/imports/importsData.js";
-import { rentalsData } from "../features/rentals/rentalsData.js";
-
-const delay = (value, timeout = 450, shouldFail = false) =>
-  new Promise((resolve, reject) => {
-    window.setTimeout(() => {
-      if (shouldFail) {
-        reject(new Error("Mock request failed. Please try again."));
-        return;
-      }
-      resolve(value);
-    }, timeout);
-  });
-
-const maybeFail = (rate = 0) => Math.random() < rate;
+import { apiRequest, setAccessToken, toQueryString } from "./apiClient.js";
 
 export const serviceTypes = {
   workshops: {
@@ -179,181 +164,145 @@ export const providers = [
   },
 ];
 
-export const mockUsers = [
-  {
-    id: "user-1",
-    name: "Alex Driver",
-    email: "alex@autoone.app",
-    phone: "+49 170 555 0123",
-    role: "customer",
-  },
-  {
-    id: "partner-1",
-    name: "Prime Auto Partner",
-    email: "partner@autoone.app",
-    phone: "+49 170 555 0144",
-    role: "partner",
-  },
-];
-
-export const partnerBookings = [
-  {
-    id: "pb-1",
-    customer: "Alex Driver",
-    service: "Diagnostics",
-    providerName: "Prime Auto Workshop",
-    date: "2026-05-04",
-    time: "09:00",
-    status: "pending",
-    amount: 45,
-  },
-  {
-    id: "pb-2",
-    customer: "Maya Reed",
-    service: "Brake repair",
-    providerName: "Prime Auto Workshop",
-    date: "2026-05-05",
-    time: "11:30",
-    status: "confirmed",
-    amount: 120,
-  },
-  {
-    id: "pb-3",
-    customer: "Omar Ali",
-    service: "Oil service",
-    providerName: "Prime Auto Workshop",
-    date: "2026-05-06",
-    time: "14:00",
-    status: "pending",
-    amount: 65,
-  },
-];
-
-export const partnerServices = [
-  { id: "svc-1", name: "Diagnostics", price: 45, duration: "45 min", active: true },
-  { id: "svc-2", name: "Brake repair", price: 120, duration: "2 hrs", active: true },
-  { id: "svc-3", name: "Oil service", price: 65, duration: "40 min", active: true },
-];
-
 export function getServiceTypes() {
-  return delay(Object.values(serviceTypes), 250, maybeFail(0.01));
+  return apiRequest("/service-types");
 }
 
 export function getProviders(type, filters = {}) {
-  const normalizedLocation = filters.location?.trim().toLowerCase();
-  const maxPrice = Number(filters.maxPrice || 0);
-  const minRating = Number(filters.minRating || 0);
-
-  const result = providers.filter((provider) => {
-    if (provider.type !== type) return false;
-    if (normalizedLocation && !provider.location.toLowerCase().includes(normalizedLocation)) {
-      return false;
-    }
-    if (maxPrice && provider.priceFrom > maxPrice) return false;
-    if (minRating && provider.rating < minRating) return false;
-    if (filters.availableToday && !provider.availableToday) return false;
-    return true;
-  });
-
-  return delay(result, 450, maybeFail(0.01));
+  return apiRequest(`/providers${toQueryString({ type, ...filters })}`);
 }
 
 export function getProviderById(type, id) {
-  const provider = providers.find((item) => item.type === type && item.id === id);
-  return delay(provider ?? null, 350, maybeFail(0.01));
+  return apiRequest(`/providers/${id}${toQueryString({ type })}`);
 }
 
 export function getFeaturedProviders() {
-  return delay(providers.filter((provider) => provider.rating >= 4.7).slice(0, 3), 300, maybeFail(0.01));
+  return apiRequest("/providers/featured");
 }
 
 export function createBooking(payload) {
-  return delay({
-    id: `booking-${Date.now()}`,
-    status: "pending",
-    ...payload,
-  }, 500);
+  return apiRequest("/bookings", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function getAllProviders() {
-  return delay(providers, 300, maybeFail(0.01));
+  return apiRequest("/providers");
 }
 
 export function searchProviders(query = "") {
-  const normalized = query.trim().toLowerCase();
-  const result = providers.filter((provider) => {
-    if (!normalized) return true;
-    return (
-      provider.name.toLowerCase().includes(normalized) ||
-      provider.location.toLowerCase().includes(normalized) ||
-      provider.services.some((service) => service.toLowerCase().includes(normalized))
-    );
-  });
-  return delay(result.slice(0, 6), 220);
+  return apiRequest(`/search/providers${toQueryString({ q: query })}`);
 }
 
 export function getPartnerDashboard() {
-  return delay({
-    stats: {
-      totalBookings: 128,
-      revenue: 18450,
-      activeRequests: partnerBookings.filter((booking) => booking.status === "pending").length,
-    },
-    bookings: partnerBookings,
-    services: partnerServices,
-    trends: [
-      { label: "Mon", value: 8 },
-      { label: "Tue", value: 12 },
-      { label: "Wed", value: 9 },
-      { label: "Thu", value: 16 },
-      { label: "Fri", value: 14 },
-    ],
-  }, 450, maybeFail(0.01));
+  return apiRequest("/partner/dashboard");
 }
 
-export function loginUser(payload) {
-  return delay({
-    ...mockUsers[0],
-    name: payload.name || mockUsers[0].name,
-    email: payload.email || mockUsers[0].email,
-  }, 350);
+export function addPartnerService(payload) {
+  return apiRequest("/partner/services", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function savePartnerService(id, payload) {
+  return apiRequest(`/partner/services/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function loginUser(payload) {
+  const result = await apiRequest("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  setAccessToken(result.accessToken);
+  return result.user;
+}
+
+export async function registerUser(payload) {
+  const result = await apiRequest("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  setAccessToken(result.accessToken);
+  return result.user;
+}
+
+export function logoutUser() {
+  setAccessToken(null);
+  return apiRequest("/auth/logout", { method: "POST" });
+}
+
+export function getCurrentUser() {
+  return apiRequest("/me");
+}
+
+export function updateCurrentUser(payload) {
+  return apiRequest("/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getMyBookings() {
+  return apiRequest("/bookings/me");
+}
+
+export function updateBookingStatus(id, status) {
+  return apiRequest(`/bookings/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function getNotifications() {
+  return apiRequest("/notifications");
+}
+
+export function markNotificationRead(id) {
+  return apiRequest(`/notifications/${id}/read`, { method: "PATCH" });
+}
+
+export function markAllNotificationsRead() {
+  return apiRequest("/notifications/read-all", { method: "PATCH" });
 }
 
 export function getRentalCars(filters = {}) {
-  const location = filters.location?.trim().toLowerCase();
-  const maxPrice = Number(filters.maxPrice || 0);
-  const result = rentalsData.filter((car) => {
-    if (location && !car.location.toLowerCase().includes(location)) return false;
-    if (filters.type && filters.type !== "all" && car.type !== filters.type) return false;
-    if (maxPrice && car.pricePerDay > maxPrice) return false;
-    return true;
-  });
-  return delay(result, 420, maybeFail(0.01));
+  return apiRequest(`/rentals${toQueryString(filters)}`);
 }
 
 export function getRentalCarById(id) {
-  return delay(rentalsData.find((car) => car.id === id) ?? null, 320, maybeFail(0.01));
+  return apiRequest(`/rentals/${id}`);
 }
 
 export function createRentalBooking(payload) {
-  return delay({ id: `rental-${Date.now()}`, status: "pending", ...payload }, 550);
+  return apiRequest(`/rentals/${payload.carId}/bookings`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function getImportCatalog(region = "EU") {
-  return delay({
-    regions: importRegions,
-    cars: importsData.filter((car) => car.region === region),
-  }, 420, maybeFail(0.01));
+  return apiRequest(`/imports/catalog${toQueryString({ region })}`);
 }
 
 export function createImportRequest(payload) {
-  return delay({ id: `import-${Date.now()}`, status: "submitted", ...payload }, 550);
+  return apiRequest("/imports/requests", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function getFinanceOffers() {
-  return delay(financeData, 360, maybeFail(0.01));
+  return apiRequest("/finance/offers");
 }
 
 export function submitFinanceApplication(payload) {
-  return delay({ id: `finance-${Date.now()}`, status: "submitted", ...payload }, 650);
+  return apiRequest("/finance/applications", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

@@ -5,24 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:backend": "npm --prefix backend run dev",
     "build": "vite build",
+    "build:backend": "npm --prefix backend run build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tanstack/react-query": "latest",
-    "i18next": "latest",
-    "lucide-react": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "react-i18next": "latest",
-    "react-router-dom": "latest"
+    "@tanstack/react-query": "5.100.7",
+    "i18next": "26.0.8",
+    "lucide-react": "1.14.0",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "react-i18next": "17.0.6",
+    "react-router-dom": "7.14.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "latest",
-    "@vitejs/plugin-react": "latest",
-    "autoprefixer": "latest",
-    "postcss": "latest",
-    "tailwindcss": "latest",
-    "vite": "latest"
+    "@tailwindcss/postcss": "4.2.4",
+    "@vitejs/plugin-react": "6.0.1",
+    "autoprefixer": "10.5.0",
+    "postcss": "8.5.13",
+    "tailwindcss": "4.2.4",
+    "vite": "8.0.10"
   }
 }

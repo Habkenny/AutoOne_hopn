@@ -45,7 +45,7 @@ export default function Login() {
         <Button type="submit" className="w-full" disabled={mutation.isPending}>
           {t("auth.submitLogin")}
         </Button>
-        <Button type="button" variant="secondary" className="w-full gap-2" onClick={() => mutation.mutate({ email })}>
+        <Button type="button" variant="secondary" className="w-full gap-2" onClick={() => mutation.mutate({ email, password })}>
           <CircleUserRound aria-hidden="true" className="h-5 w-5" />
           {t("auth.social")}
         </Button>

@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarCheck, Heart, Settings, Wrench } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -6,6 +7,7 @@ import Badge from "../components/ui/Badge.jsx";
 import Input from "../components/ui/Input.jsx";
 import Modal from "../components/ui/Modal.jsx";
 import { useCurrency } from "../hooks/useCurrency.js";
+import { getMyBookings, updateBookingStatus, updateCurrentUser } from "../services/mockApi.js";
 import { useAppState } from "../store/AppStateContext.jsx";
 import { writeStorage } from "../utils/storage.js";
 
@@ -20,22 +22,36 @@ const bookingFilters = ["upcoming", "completed", "cancelled"];
 export default function Dashboard() {
   const { t, i18n } = useTranslation();
   const { state, actions } = useAppState();
+  const queryClient = useQueryClient();
   const { currency, setCurrency, formatMoney } = useCurrency();
   const [activeTab, setActiveTab] = useState("bookings");
   const [bookingFilter, setBookingFilter] = useState("upcoming");
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [profile, setProfile] = useState({ language: "en", ...state.auth.user });
+  const { data: serverBookings = state.bookings } = useQuery({
+    queryKey: ["my-bookings"],
+    queryFn: getMyBookings,
+    enabled: state.auth.isAuthenticated,
+  });
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => updateBookingStatus(id, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-bookings"] }),
+  });
+  const profileMutation = useMutation({
+    mutationFn: updateCurrentUser,
+    onSuccess: (user) => actions.updateProfile(user),
+  });
 
   const filteredBookings = useMemo(() => {
     if (bookingFilter === "upcoming") {
-      return state.bookings.filter((booking) => ["pending", "confirmed"].includes(booking.status));
+      return serverBookings.filter((booking) => ["pending", "confirmed"].includes(booking.status));
     }
-    return state.bookings.filter((booking) => booking.status === bookingFilter);
-  }, [bookingFilter, state.bookings]);
+    return serverBookings.filter((booking) => booking.status === bookingFilter);
+  }, [bookingFilter, serverBookings]);
 
   function saveProfile(event) {
     event.preventDefault();
-    actions.updateProfile(profile);
+    profileMutation.mutate(profile);
     i18n.changeLanguage(profile.language);
     writeStorage("autoone.language", profile.language);
     actions.addToast({ title: "Profile updated", message: "Your preferences were saved." });
@@ -107,6 +123,7 @@ export default function Dashboard() {
                               type="button"
                               variant="danger"
                               onClick={() => {
+                                statusMutation.mutate({ id: booking.id, status: "cancelled" });
                                 actions.updateBookingStatus(booking.id, "cancelled");
                                 actions.addToast({ title: "Booking cancelled", message: booking.providerName });
                               }}

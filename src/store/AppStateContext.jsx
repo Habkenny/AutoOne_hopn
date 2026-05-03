@@ -62,7 +62,7 @@ const initialNotifications = [
 ];
 
 const initialState = {
-  auth: readStorage("autoone.auth", { isAuthenticated: true, user: initialUser }),
+  auth: readStorage("autoone.auth", { isAuthenticated: false, user: null }),
   bookings: readStorage("autoone.bookings", initialBookings),
   favorites: readStorage("autoone.favorites", []),
   notifications: readStorage("autoone.notifications", initialNotifications),

@@ -1,9 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { getAllProviders } from "../services/mockApi.js";
 import Button from "./Button.jsx";
-import { providers } from "../services/mockApi.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 
 export default function SearchBar() {
@@ -12,6 +13,10 @@ export default function SearchBar() {
   const [location, setLocation] = useState("");
   const [service, setService] = useState("workshops");
   const [recent, setRecent] = useState(() => readStorage("autoone.recentSearches", []));
+  const { data: providers = [] } = useQuery({
+    queryKey: ["search-provider-suggestions"],
+    queryFn: getAllProviders,
+  });
 
   const suggestions = useMemo(() => {
     const term = location.trim().toLowerCase();
